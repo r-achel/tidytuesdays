@@ -1,0 +1,84 @@
+```{r setup packages "include = F"}
+install.packages("babynames")
+install.packages('showtext', dependencies = TRUE)
+library(showtext)
+library(babynames)
+library(tidyverse)
+```
+
+```{r import fonts}
+# https://fonts.google.com/featured/Superfamilies
+font_add_google("Montserrat", "Montserrat")
+```
+
+```{r data overview by proportion}
+summary(babynames)
+
+babynames %>%
+group_by(year) %>%
+arrange(desc(prop)) %>%
+head()
+```
+
+
+```{r plotting rachel popularity}
+plt_popularity <- babynames %>%
+filter(name == "Rachel", sex == "F") %>%
+ggplot(aes(year, prop)) +
+geom_area(fill="indianred4") +
+geom_line(colour = "linen") +
+ggtitle("The rise and fall of Rachel's popularity") +
+labs(x = "Year", y="Proportion") +
+theme(
+  text = element_text(family="Monserrat", color = "linen", face = "bold"),
+  axis.text = element_text(color = "linen", size = rel(0.8)),
+  axis.ticks = element_line(colour = "linen"),
+  panel.background = element_rect(fill = "rosybrown3"),
+  panel.border = element_blank(),
+  panel.grid.major = element_line(color="linen", linetype = "dashed"),
+  panel.grid.minor = element_blank(),
+  axis.line = element_blank(),
+  plot.background = element_rect(fill = "rosybrown3"),
+  plot.title = element_text(size = 20))
+
+plt_popularity
+```
+
+```{r Finding the years where the name Rachel was most popular}
+ranked_years <- babynames %>%
+filter(name == "Rachel") %>%
+group_by(year) %>%
+summarise(max_prop = max(prop)) %>%
+arrange(desc(max_prop))
+```
+
+
+```{r explaining why rachel may have been so popular...}
+interesting_years <- c("1962", "1985", "1994", "1996")
+interesting_events <- c("Rachel Carson's\n'Silent Spring' released", "MAXIMUM\nRACHEL", "Me!", "'Friends' hits \npeak viewership,\n flop era begins")
+interesting_years_rachel <- filter(babynames, year %in% interesting_years, name == "Rachel", sex =="F")
+df_interesting <- tibble(interesting_years_rachel, interesting_events)
+df_interesting$ypos <- c(0.005, 0.01, 0.011, 0.0125)
+df_interesting$xpos <- c(1950, 1970, 1992, 2000)
+df_interesting$xend <- c(df_interesting$year[1], df_interesting$year[2]-1, df_interesting$year[3:4])
+df_interesting$yend <- df_interesting$prop + c(0.00025, 0.0001, 0.00025, 0.00025)
+```
+
+```{r updated plot with labels}
+plt_popularity +
+geom_curve(data = df_interesting,
+  aes(x=xpos, y=ypos, xend = xend, yend = yend),
+  arrow = arrow(length = unit(0.2, "cm"), type = "open"),
+  color = "linen",
+  size = 1,
+  angle=10
+) +
+geom_label(data = df_interesting,
+          aes(x = xpos, y=ypos, label = interesting_events),
+          hjust = "middle",
+          vjust = "bottom",
+          color = "indianred4",
+          family = "Monserrat"
+          ) +
+ylim(0,0.015)
+```
